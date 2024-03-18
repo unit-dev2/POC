@@ -21,7 +21,29 @@ const Device = sequelize.define('Device', {
         allowNull: false
     },
 });
+
+const Action = sequelize.define('Action', {
+    /*id: {
+        type: Sequelize.INTEGER,
+        autoIncrement: true,
+        primaryKey: true
+    },*/
+    deviceId: {
+        type: Sequelize.STRING,
+        allowNull: false
+    },
+    action: {
+        type: Sequelize.STRING,
+        allowNull: false
+    },
+    status: {
+        type: Sequelize.STRING,
+        allowNull: false
+    },
+});
+
 module.exports = {
     sequelize: sequelize,
-    Device: Device
+    Device: Device,
+    Action: Action
 };
