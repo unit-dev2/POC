@@ -2,8 +2,11 @@ import math
 import subprocess
 import progressbar
 import time
+import sys
+from threading import Thread
 from actions import actions
 from action_logs import action_logs
+from .notify.slack import SlackNotifyCore
 
 class ActionCore:
 
@@ -37,10 +40,12 @@ class ActionCore:
     
     def _update_action(self, action_id):
         action = None
+        Slack_Notify_Core = SlackNotifyCore()
         for i, a in enumerate(actions):
             if a.get("id") == action_id:
                 actions[i] = {**a, "status": "completed"}
                 action = actions[i]
+                #Slack_Notify_Core.send_notification_on_update_with_notify(action)
 
         if action is None:
             print("---- Error on update action with ID: ", action_id)
@@ -53,7 +58,6 @@ class ActionCore:
 
 
     def find_by_ip(self, target):
-        print("target: ", target)
         action = None
         for i, a in enumerate(actions):
             if a.get("target") == target and a.get("status") == "in progress":
@@ -67,7 +71,7 @@ class ActionCore:
         action = actions[action_id - 1]
         arguments = action.get("arguments")
         target = action.get("target")
-        print("target: ", target)
+        #print("target: ", targets)
         progress_duration, progress_frequency = self._get_progress_duration(arguments)
 
         command = ["ping", "-w", "1", f"{target}"]
@@ -94,3 +98,86 @@ class ActionCore:
         print("")
         self._update_action(action_id)
         self._add_action_log(action_id, action_messages)
+
+
+    def _update_action_bars(self, action_details, index):
+        for action in action_details:
+            action["bar"].update(index)
+
+
+    def execute_action(self, action):
+        target = action["target"]
+        command = ["ping", "-w", "1", f"{target}"]
+        #print("command: ", command)
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = process.communicate()
+
+
+    def execute_tread(self, thread):
+        thread.start()
+
+
+    def wait_tread(self, thread):
+        thread.join()
+
+
+    def execute_ping_multi(self, action_id):
+        print("----------------- Aca entraaaaaa -----------------")
+        action_messages = []
+        action = actions[action_id - 1]
+        arguments = action.get("arguments")
+        targets = action.get("targets")
+        print("target: ", targets)
+        progress_duration, progress_frequency = self._get_progress_duration(arguments)
+
+        start_time = time.time()
+
+        #bars = [
+        #    progressbar.ProgressBar(
+        #        max_value=progress_duration,
+        #        line_offset=i + 1,
+        #        max_error=False
+        #    ) for i in range(len(targets))
+        #]
+
+        action_details = [
+            {
+                "bar": progressbar.ProgressBar(
+                    max_value=progress_duration,
+                    line_offset=i + 1,
+                    max_error=False),
+                "target": target
+            } for i, target in enumerate(targets)
+        ]
+
+        print_fd = progressbar.LineOffsetStreamWrapper(lines=0, stream=sys.stdout)
+        assert print_fd
+
+        for i in range(progress_duration):
+            #print("time = ", math.floor(time.time() - start_time))
+            #bar.update(i)            
+            self._update_action_bars(action_details, i)
+
+            if (math.floor(time.time() - start_time) % progress_frequency) == 0:
+                actions_thread = [ Thread(target=self.execute_action, kwargs={"action": action}) for action in action_details ]
+                #print("test 1")
+                #print("test 2")
+                list(map(self.execute_tread, actions_thread))
+                
+                #print("test 3")
+                list(map(self.wait_tread, actions_thread))
+                #print("test 4")
+                #action_messages.append(stdout.decode())
+                #print(f"Elapsed time: {time.time() - start_time}")
+            
+            else:
+                time.sleep(1)
+
+            #thread = Thread(target=Action_Core.execute_ping, kwargs={"action_id": new_action.get("id")})
+            #thread.start()
+
+        # Cleanup the bars
+        for action in action_details:
+            action["bar"].finish()
+            # Add a newline to make sure the next print starts on a new line
+            #print()
