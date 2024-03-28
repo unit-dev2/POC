@@ -27,7 +27,7 @@ class ActionList(Resource):
             thread = Thread(target=Action_Core.execute_ping_multi, kwargs={"action_id": new_action.get("id")})
             thread.start()
             ##Slack_Notify_Core.send_notification(new_action)
-            #Slack_Notify_Core.send_notification_with_notify(new_action)
+            Slack_Notify_Core.send_notification_with_notify(new_action)
             return { "msg": "Action created", "action": new_action }
         else:
             abort(500)

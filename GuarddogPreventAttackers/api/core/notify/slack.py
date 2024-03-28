@@ -1,11 +1,9 @@
 import os
-import requests
 
 class SlackNotifyCore:
 
     def __init__(self) -> None:
-        self._webhook_url = "https://hooks.slack.com/services/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"
-        self._headers = {'content-type': 'application/json', 'Accept-Charset': 'UTF-8'}
+        pass
 
 
     def _convert_json_to_string(self, action):
@@ -15,7 +13,7 @@ class SlackNotifyCore:
         ------------------------
         action id: {action.get("id", None)}
         command: {action.get("command", None)}
-        target: {action.get("target", None)}
+        targets: {action.get("targets", [])}
         arguments:
           - frequency: {action_arguments.get("frequency", None)}
           - quantity: {action_arguments.get("quantity", None)}
@@ -30,17 +28,9 @@ class SlackNotifyCore:
         ------------------------
         action id: {action.get("id", None)}
         command: {action.get("command", None)}
-        target: {action.get("target", None)}
+        targets: {action.get("targets", None)}
         status: {action.get("status", None)}
         """
-
-
-    def send_notification(self, json_data):
-        action_string = self._convert_json_to_string(json_data)
-        payload = "{ 'text': " + action_string + "}"
-        print("payloead: ", payload)
-        response = requests.post(self._webhook_url, data=payload, headers=self._headers)
-        print("response: ", response)
 
 
     def send_notification_with_notify(self, json_data):
